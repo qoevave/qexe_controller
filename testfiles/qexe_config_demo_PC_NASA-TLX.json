@@ -1,0 +1,138 @@
+{
+    "testSettings" : {
+        "udpPortIn" : 8002,
+        "udpPortOut" : 8000,
+        "ip" : "127.0.0.1",
+        "methodType" : "PC",
+        "questionnaireType" : "NASA-TLX",
+        "questionnaireIntegration" : "End",
+        "modalityRatio" : "A",
+        "itemPresentationOder" : "Fixed",
+        "pathToAudioVideoScenesContent" : "D:/work/_QoEVAVE/gitlab_fau/QExE/Content",
+        "audioRendering" : {
+            "active" : 1,
+            "renderingPipeline" : "Objects",
+            "pathToVSTs" : "D:/work/_QoEVAVE/gitlab_fau/QExE/MaxHost/localtmp",
+            "audioVSTConditions" : [
+                {
+                    "conditionID" : "GBR_ref",
+                    "vst" : "GBR.dll",
+                    "hrtf" : "D2_48K_24bit_256tap_FIR_SOFA.sofa",
+                    "vstParameterMap" : "GBRmapper.js"
+                },
+                {
+                    "conditionID" : "GBR_2",
+                    "vst" : "GBR.dll",
+                    "hrtf" : "D2_48K_24bit_256tap_FIR_SOFA.sofa",
+                    "vstParameterMap" : "GBRmapper.js"
+                },
+                {
+                    "conditionID" : "GBR_2",
+                    "vst" : "GBR.dll",
+                    "hrtf" : "D2_48K_24bit_256tap_FIR_SOFA.sofa",
+                    "vstParameterMap" : "GBRmapper.js"
+                }
+            ]
+        }
+    },
+    "Scenes" : [
+        {
+            "stimuli_ID" : "InteractionDemo_scene_1",
+            "unityScene_ID" : "_interactionDemo",
+            "visualStimuliType" : "CGI",
+            "dimensions" : [ 30.00, 8.00, 30.0 ],
+            "multichannelAudio" : {
+                "multichannelAudioFile" : null
+            },
+            "objectAudio" : {
+                "objectAudioFolder" : "audio/_bongos/edited",
+                "objectAudioRouting" : [
+                    {
+                        "pathToFile" : "1_bongos_L.wav",
+                        "inputChannel" : 0,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "2_bongos_R.wav",
+                        "inputChannel" : 1,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "3_trainsound_whistle.wav",
+                        "inputChannel" : 2,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "4_stream.wav",
+                        "inputChannel" : 3,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "5_birdsong_1.wav",
+                        "inputChannel" : 4,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "5_brick_2.wav",
+                        "inputChannel" : 5,
+                        "autoplay" : 0
+                    },
+                    {
+                        "pathToFile" : "6_metal_2.wav",
+                        "inputChannel" : 5,
+                        "autoplay" : 0
+                    }
+                ]
+            }
+        },
+        {
+            "stimuli_ID" : "InteractionDemo_scene_2",
+            "unityScene_ID" : "_interactionDemo",
+            "visualStimuliType" : "CGI",
+            "dimensions" : [ 30.00, 8.00, 30.0 ],
+            "multichannelAudio" : {
+                "multichannelAudioFile" : null
+            },
+            "objectAudio" : {
+                "objectAudioFolder" : "audio/_bongos/edited",
+                "objectAudioRouting" : [
+                    {
+                        "pathToFile" : "1_bongos_L.wav",
+                        "inputChannel" : 0,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "2_bongos_R.wav",
+                        "inputChannel" : 1,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "3_trainsound_whistle.wav",
+                        "inputChannel" : 2,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "4_stream.wav",
+                        "inputChannel" : 3,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "5_birdsong_1.wav",
+                        "inputChannel" : 4,
+                        "autoplay" : 1
+                    },
+                    {
+                        "pathToFile" : "5_brick_2.wav",
+                        "inputChannel" : 5,
+                        "autoplay" : 0
+                    },
+                    {
+                        "pathToFile" : "6_metal_2.wav",
+                        "inputChannel" : 5,
+                        "autoplay" : 0
+                    }
+                ]
+            }
+        }
+    ]
+}

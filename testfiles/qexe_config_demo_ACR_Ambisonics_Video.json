@@ -1,0 +1,66 @@
+{
+    "testSettings" : {
+        "udpPortIn" : 8002,
+        "udpPortOut" : 8000,
+        "ip" : "127.0.0.1",
+        "methodType" : "ACR",
+        "questionnaireType" : "NASA-TLX",
+        "questionnaireIntegration" : "End",
+        "modalityRatio" : "A",
+        "itemPresentationOder" : "Fixed",
+        "pathToAudioVideoScenesContent" : "D:/work/_QoEVAVE/gitlab_fau/QExE/Content",
+        "audioRendering" : {
+            "active" : 1,
+            "renderingPipeline" : "Multichannel",
+            "pathToVSTs" : "D:/work/_QoEVAVE/gitlab_fau/QExE/MaxHost/localtmp",
+            "audioVSTConditions" : [
+                {
+                    "conditionID" : "AmbiBin",
+                    "vst" : "sparta_ambiBIN.dll",
+                    "hrtf" : "D2_48K_24bit_256tap_FIR_SOFA.sofa",
+                    "vstParameterMap" : "AmbiBINmapper.js"
+                }
+            ]
+        }
+    },
+    "Scenes" : [
+        {
+            "stimuli_ID" : "TrainTest01",
+            "unityScene_ID" : "_videoPlayer",
+            "visualStimuliType" : "ODV",
+            "dimensions" : [ 30.00, 8.00, 30.0 ],
+            "multichannelAudio" : {
+                "multichannelAudioFile" : "qoevave_4OA/Train01_A_ambiX4_24bit.wav"
+            },
+            "objectAudio" : {
+                "objectAudioFolder" : "null",
+                "objectAudioRouting" : [ ]
+            },
+            "videoFiles" : [
+                {
+                    "pathToFile" : "qoevave_videos/Train01_V_8K_60fps_60s_252.mp4",
+                    "video_ID" : 1
+                }
+            ]
+        },
+        {
+            "stimuli_ID" : "TrainTest02",
+            "unityScene_ID" : "_videoPlayer",
+            "visualStimuliType" : "ODV",
+            "dimensions" : [ 30.00, 8.00, 30.0 ],
+            "multichannelAudio" : {
+                "multichannelAudioFile" : "qoevave_4OA/Train01_A_ambiX4_24bit.wav"
+            },
+            "objectAudio" : {
+                "objectAudioFolder" : "null",
+                "objectAudioRouting" : [ ]
+            },
+            "videoFiles" : [
+                {
+                    "pathToFile" : "qoevave_videos/Train01_V_8K_60fps_60s_252.mp4",
+                    "video_ID" : 1
+                }
+            ]
+        }
+    ]
+}
