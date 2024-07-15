@@ -1,0 +1,19 @@
+{
+	"tmpItem" : [ 		{
+			"sceneIndex" : 0,
+			"stimuli_ID" : "InteractionDemo_scene_1",
+			"unityScene_ID" : "_interactionDemo",
+			"videoFile" : "null",
+			"video_ID" : "null",
+			"audioCondition" : [ 0, 1, 2 ]
+		}
+, 		{
+			"sceneIndex" : 1,
+			"stimuli_ID" : "InteractionDemo_scene_2",
+			"unityScene_ID" : "_interactionDemo",
+			"videoFile" : "null",
+			"video_ID" : "null",
+			"audioCondition" : [ 0, 1, 2 ]
+		}
+ ]
+}
