@@ -18,6 +18,7 @@ exports.PCParadigm = function (_objtxt)
 
     var itemCount=0;                        // Count for the Scenes.
 
+    var comparisonRepitions = _objtxt.testSettings.repetionMultiplier;
     var numberOfUniqueComparisons;
 
     switch (_objtxt.testSettings.modalityRatio)
@@ -31,7 +32,7 @@ exports.PCParadigm = function (_objtxt)
             audioConditionsArray = [];
             numberOfUniqueComparisons = (_objtxt.testSettings.audioRendering.audioVSTConditions.length*(_objtxt.testSettings.audioRendering.audioVSTConditions.length - 1))/2;
             post("Number of unique pairs (no-self comparison) =", numberOfUniqueComparisons, '\n');
-            post("Number of repetitions = 3", '\n');
+            post("Number of repetitions =", comparisonRepitions, '\n');
 
             // Loop through all AudioConditions for each scene.
             for (k=0; k<_objtxt.testSettings.audioRendering.audioVSTConditions.length; k++)
@@ -41,7 +42,7 @@ exports.PCParadigm = function (_objtxt)
                     tmpPairs.set("condition1", k);
                     tmpPairs.set("condition2", x);
                     // Add in 3 repetitions per comparison
-                    for(reps=0; reps<1; reps++)
+                    for(reps=0; reps<comparisonRepitions; reps++)
                     {
                         tmpPairList.append("Pair", tmpPairs);
                     }

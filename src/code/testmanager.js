@@ -245,7 +245,8 @@ function SetOSCManager() {
                                     _objtxt.testSettings.methodType,                     // set method.
                                     numberOfAudioRenderingVSTs,         // set number of VST loaded.
                                     _objtxt.testSettings.questionnaireType,         // set type of questionnaire.
-                                    _objtxt.testSettings.questionnaireIntegration);  // set the intrgation mode of the questionnaire.                   
+                                    _objtxt.testSettings.questionnaireIntegration, // set the intrgation mode of the questionnaire. 
+                                    _objtxt.testSettings.repetionMultiplier);       // set the number of repetitions for the test.            
 }
 
 /**
@@ -320,7 +321,7 @@ function setTestMethod(method) {
         case 'PC':
             post("Importing test methodology: ", method, "\n");
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_PC");
-            SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest",numberOfAudioRenderingVSTs);
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest",numberOfAudioRenderingVSTs, _objtxt.testSettings.repetionMultiplier);
             break;
 
         case 'MUSHRA':

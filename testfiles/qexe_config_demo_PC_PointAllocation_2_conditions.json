@@ -4,6 +4,7 @@
         "udpPortOut" : 8000,
         "ip" : "127.0.0.1",
         "methodType" : "PC",
+        "repetionMultiplier" : 3,
         "questionnaireType" : "PointAllocation",
         "questionnaireIntegration" : "Lace",
         "modalityRatio" : "A",

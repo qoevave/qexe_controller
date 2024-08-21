@@ -1,0 +1,9 @@
+{ "ResultsFile" :
+{ "TestInformation" :
+{"Method":"PC","Modality":"A","NumberOfItems":2,"QuestionnaireType":"PointAllocation","QuestionnaireIntegration":"Lace"}, 
+ "AudioConditions" : [
+] ,
+"TestResults" : [
+{"SceneID":"config","UnitySceneID":"_config","VideoFile":"null","VideoID":"null","Ratings":[{"condition01":0,"condition02":1,"Rating":0},{"condition01":1,"condition02":0,"Rating":57},{"condition01":1,"condition02":0,"Rating":0}]}, 
+}
+}

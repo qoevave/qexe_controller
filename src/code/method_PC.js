@@ -28,12 +28,13 @@ var conA_btn;   // Reference to GUI A button
 var conB_btn;   // Reference to GUI B button
 
 var currentPairCondition = 0;
+var totalComparisons = 0;
 
 // *************************
 // Instansiate objects
 // *************************
 
-function setTest(val)
+function setTest()
 {
 
     var tmpPairs = new Dict();
@@ -50,8 +51,14 @@ function setTest(val)
             return;
         }
 
+        if ( arguments[1] < 1 ){
+            Post("Repetition multiplier must be 1 or greater for pairwise comparison test. \n");
+            return;
+        }
+
         // Update global number of pairs
         post("Number of conditions:", a, '\n');
+        post("Number of repetitions:", arguments[1], '\n');
         _numConditions = a;
 
         // Create a dictionary for the condition sets within a scene. 
@@ -61,41 +68,45 @@ function setTest(val)
             {
                 tmpPairs.set("condition1", k);
                 tmpPairs.set("condition2", x);
-                for(reps=0; reps<1; reps++)
+                for(reps=0; reps<arguments[1]; reps++)
                 {
                     tmpPairSets.append("Pair", tmpPairs);
                 }
             }
         }
 
+        
+        totalComparisons = ((_numConditions*(_numConditions - 1))/2) * arguments[1];
+
+
         // Save the MaxMSP dict as an object. 
         comparisonPairObj = JSON.parse(tmpPairSets.stringify());
         post("Created pairings: " + JSON.stringify(comparisonPairObj) + "\n");
 
-        if(_numConditions > 2){
+        if(totalComparisons > 2){
             _ratings =  new Array(comparisonPairObj.Pair.length);
             _randomizedOrder = new Array(comparisonPairObj.Pair.length);
         }
 
-        if(_numConditions == 2){
+        if(totalComparisons == 2){
             _ratings =  new Array(1);
             _randomizedOrder = new Array(1);
         }
 
         // Initialize the ratings array to 0.
-        if(_numConditions > 2)
+        if(totalComparisons > 2)
         {
             for (i=0; i<comparisonPairObj.Pair.length; i++)
             {
                 _randomizedOrder[i] = i;
-                _ratings[i] = 0;
+                _ratings[i] = 60;
             }
         }
 
-        if(_numConditions == 2)
+        if(totalComparisons == 2)
         {
             _randomizedOrder[0] = 0;
-            _ratings[0] = 0;
+            _ratings[0] = 60;
         }
 
 
@@ -108,6 +119,7 @@ function setTest(val)
         // Select A condition. 
         conA_btn = this.patcher.getnamed("conA");
         conB_btn = this.patcher.getnamed("conB");
+        this.patcher.getnamed("PCslider").message("float", 60);
         SelectCondition(0);
 
     } else // Complain about arguments
@@ -123,7 +135,7 @@ function setTest(val)
 
 // Randomly flip the A/B conditions so they are not always presented as the same condition. 
 function FlipConditions(){
-    if(_numConditions > 2){
+    if(totalComparisons > 2){
         for(i=0; i<comparisonPairObj.Pair.length;i++){
             if(Math.round(Math.random())==1){
                 var tmp1 = comparisonPairObj.Pair[i].condition1;
@@ -134,7 +146,7 @@ function FlipConditions(){
             }
         }
     }
-    if(_numConditions == 2){
+    if(totalComparisons == 2){
         for(i=0; i<=1;i++){
             if(Math.round(Math.random())==1){
                 var tmp1 = comparisonPairObj.Pair.condition1;
@@ -146,10 +158,10 @@ function FlipConditions(){
         }
     }
 
-    if(_numConditions > 2){
+    if(totalComparisons > 2){
         post("Current Pair:", "A =", comparisonPairObj.Pair[_randomizedOrder[currentConditionPair]].condition1, "B =", comparisonPairObj.Pair[_randomizedOrder[currentConditionPair]].condition2, '\n');
     }
-    if(_numConditions == 2){
+    if(totalComparisons == 2){
         post("Current Pair:", "A =", comparisonPairObj.Pair.condition1, "B =", comparisonPairObj.Pair.condition2, '\n');
     }
 }
@@ -202,7 +214,7 @@ function setItem() {
 
 function WriteResult(ThisItemNumber) {
     outlet(1, "WriteResult", ThisItemNumber, JSON.stringify(ConstructDict()));
-    //RandomizeConditions();
+    RandomizeConditions();
 }
 
 function ConstructDict(){
@@ -217,7 +229,7 @@ function ConstructDict(){
 
     var results_list = [];
 
-    if(_numConditions > 2){
+    if(totalComparisons > 2){
         for (i=0; i<comparisonPairObj.Pair.length; i++)
         {   
             var pair = {
@@ -229,7 +241,7 @@ function ConstructDict(){
         }
         result.Ratings = results_list;              
     }
-    if(_numConditions <= 2){
+    if(totalComparisons == 2){
         var pair = {
             "condition01" : comparisonPairObj.Pair.condition1,
             "condition02" : comparisonPairObj.Pair.condition2,
@@ -272,14 +284,14 @@ function RandomizeConditions()
 
 
     // Reset the results to 0.
-    if(_numConditions > 2){
+    if(totalComparisons > 2){
         for (i=0; i<comparisonPairObj.Pair.length; i++)
         {
-            _ratings[i] = 0;
+            _ratings[i] = 60;
         }
     }
-    if(_numConditions <= 2){
-        _ratings[0] = 0;
+    if(totalComparisons == 2){
+        _ratings[0] = 60;
     }
 
     // Randomly flip the conditions again. 
@@ -288,7 +300,7 @@ function RandomizeConditions()
 
 function SelectCondition()
 {
-    if(_numConditions > 2){
+    if(totalComparisons > 2){
         switch(arguments[0])
         {
             case 0:
@@ -306,7 +318,7 @@ function SelectCondition()
                 break; 
         }
     }
-    if(_numConditions == 2){
+    if(totalComparisons == 2){
         switch(arguments[0])
         {
             case 0:

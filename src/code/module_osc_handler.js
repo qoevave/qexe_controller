@@ -20,6 +20,7 @@ var questionnaire = "null";
 var questionnaireIntegration = "null";
 var numberOfConditions = 0;
 var subjectResultsDirectory;
+var repetionMultiplier = 1;
 var idAddress = 0;
 var port = 0;
 
@@ -166,7 +167,7 @@ function handle_SendToUnity(...args){
             break;
         case 'give_paradigm_information':
             // max.post('osc_handler: sending paradigm information to Unity');
-            max.outlet('toclient', '/client/configuration/', 'set_paradigm_information', method, numberOfConditions, questionnaire, questionnaireIntegration);
+            max.outlet('toclient', '/client/configuration/', 'set_paradigm_information', method, numberOfConditions, questionnaire, questionnaireIntegration, repetionMultiplier);
             break;
         default:
             max.post('error in handle_SendToUnity()');
@@ -185,6 +186,7 @@ max.addHandler('SetLocalVars', (...args) => {
             numberOfConditions = args[2];       // set number of conditions
             questionnaire = args[3];                // set questionnaire
             questionnaireIntegration = args[4]; // set questionnaire integration type
+            repetionMultiplier = args[5];       // set repetition multiplier
             break;    
             
         case 'set_subjects_results_directory':
