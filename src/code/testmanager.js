@@ -126,8 +126,15 @@ function loadTest(filePath)
     // Randomize the order of test items. 
     randomizeSequence();
 
-    // Set directories. 
-    SEND_MODULE_RESULTS_WRITER.message("OpenFolder", RESULTSDIRECTORY);
+    // Set directories.
+    if (RESULTSDIRECTORY != null) {
+        SEND_MODULE_RESULTS_WRITER.message("OpenFolder", RESULTSDIRECTORY);
+    }else{
+        SEND_MODULE_RESULTS_WRITER.message("OpenFolder", PATCHDIRECTORY+"/../../");
+        post("Results directory not set. Defaulting to parent directory of controller project", "\n");
+        SEND_PANEL_DIRECTORY_INFORMATION.message("DisplayResultsDirectory", PATCHDIRECTORY+"/../../");
+    }
+
     CONTENTDIRECTORY = _objtxt.testSettings.pathToAudioVideoScenesContent;
     SEND_PANEL_DIRECTORY_INFORMATION.message("DisplayContentDirectory", CONTENTDIRECTORY);
 

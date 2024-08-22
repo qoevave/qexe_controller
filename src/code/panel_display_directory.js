@@ -21,3 +21,8 @@ function DisplayContentDirectory(directory) {
     var text_content_directory = this.patcher.getnamed("text_content_directory");
     text_content_directory.setwithtruncation(directory, 380);
 }
+
+function DisplayResultsDirectory(directory) {
+    var text_content_directory = this.patcher.getnamed("text_results_directory");
+    text_content_directory.setwithtruncation(directory, 320);
+}

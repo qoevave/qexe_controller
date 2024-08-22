@@ -1,9 +1,0 @@
-{ "QuestionnaireFile" :
-{ "TestInformation" :
-{"Method":"PC","Modality":"A","NumberOfItems":2,"QuestionnaireType":"PointAllocation","QuestionnaireIntegration":"Lace"}, 
- "AudioConditions" : [
-] ,
-"QuestionnaireResults" : [
-{"SceneID":"config","UnitySceneID":"_config","VideoFile":"null","VideoID":"null","Rating":{"Attribute.1":0,"Attribute.2":0,"Attribute.3":0,"Attribute.4":0,"Attribute.5":0,"Attribute.6":0,"Attribute.7":0,"Attribute.8":0,"Attribute.9":0,"Attribute.10":0,"Attribute.11":0,"Attribute.12":0}}, 
-}
-}
