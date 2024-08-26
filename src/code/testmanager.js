@@ -330,6 +330,12 @@ function setTestMethod(method) {
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_PC");
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest",numberOfAudioRenderingVSTs, _objtxt.testSettings.repetionMultiplier);
             break;
+        
+        case 'PairedAttribute':
+            post("Importing test methodology: ", method, "\n");
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_PairedAttribute");
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest",numberOfAudioRenderingVSTs, _objtxt.testSettings.repetionMultiplier);
+            break;
 
         case 'MUSHRA':
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_MUSHRA");
@@ -651,6 +657,10 @@ function calculateParadigm() {
             break;
 
         case 'PC':
+            thisTest = _method_PC_calc.PCParadigm(_objtxt);
+            break;
+
+        case 'PairedAttribute':
             thisTest = _method_PC_calc.PCParadigm(_objtxt);
             break;
 
