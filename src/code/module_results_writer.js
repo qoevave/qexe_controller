@@ -1,345 +1,263 @@
+/**
+ * @fileOverview Results writer (Node for Max).
+ *
+ * Every test run gets its own session folder:
+ *   <results root>/<Day_DD_MM_YYYY>/subj_<SubjectID>_<YYYYMMDD-HHMMSS>/
+ *     results_<SubjectID>_<stamp>.json         per-item results (always valid JSON, rewritten after every item)
+ *     questionnaire_<SubjectID>_<stamp>.json   questionnaire results (same format)
+ *     trials_<SubjectID>_<stamp>.jsonl / .csv  per-trial data (e.g. localization), one line per trial, appended
+ *
+ * Files are written synchronously after every item or trial, so an aborted test or a crash keeps
+ * everything recorded up to that point. The session folder name has second resolution, so repeated
+ * runs with the same subject ID never write into the same files.
+ *
+ * Handlers (messages to this script):
+ *   OpenFolder <path>                  results root (a dated sub-folder is created inside)
+ *   SetSubjectID <id>
+ *   SetInfoForResults <method> <modality> <numberOfItems>
+ *   SetInfoForQuestionnaire <active> <type> <integration>
+ *   SetConditionID / SetConditionPath / SetConditionHRTF / SetConditionParameterMap <list>
+ *   Restart                            closes the current session
+ *   GiveSubjectsResultsFile            sends the session folder to Unity (behaviour log location)
+ *   WriteResult <itemIndex> <json>
+ *   WriteQuestionnaire <itemIndex> <json>
+ *   WriteTrial <json>
+ */
+
 const fs = require("fs");
-// const path = require("path");
-// const util = require("util");
+const path = require("path");
 const max = require("max-api");
-// const os = require("os");
 
-max.post('node.js: writeresults.js instantiated');
+max.post("node.js: module_results_writer.js instantiated");
 
-var resultsWriteStream;
-var resultsStreamOpen = false;
-var questionnaireWriteStream;
-var questionnaireStreamOpen = false;
+const Days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// var audioConditions = ["GBR", "GBR2", "SPAARTA"];
+// Test information.
+let TodaysPath = null;
+let SubjectID = "id_unknown";
+let Methodology = "null";
+let Modality = "null";
+let Numberofitems = 0;
+let QuestionnaireType = "null";
+let QuestionnaireIntegration = "null";
+let QuestionnaireActive = 0;
+let AudioConditionsID = [];
+let ConditionPathArray = [];
+let HRTFInfoArray = [];
+let ParameterMap = [];
 
-// var audioConditionsMapper = ["../path1", "../path/deeper", "../Aalto"];
+// Current session (null when no test is running).
+let session = null;
 
-var TodaysPath;
+// ---------------------------------------------------------------------------------------------
+// Configuration handlers
+// ---------------------------------------------------------------------------------------------
 
-var SubjectsPath;
-
-var Days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-// Information for results files. 
-var AudioConditionsID = [];
-var ConditionPathArray = [];
-var HRTFInfoArray = [];
-var ParameterMap = [];
-var Numberofitems = 3;
-var SubjectID = "null";
-var Methodology = "null";
-var Modality = "null";
-var QuestionnaireType = "null";
-var QuestionnaireIntegration = "null";
-var QuestionnaireActive = 0;
-
-
-// Create a results folder for today is there isn't one there.
-max.addHandler('OpenFolder', (path) => {
-    date = GetDate();
-    if(path == null){
-        path = process.cwd();
-        TodaysPath = path+'../results/'+date;
-        CreateDir(TodaysPath);
-    }else{
-        TodaysPath = path+'/'+date;
-        CreateDir(TodaysPath);
-    }
-    SubjectID = 'id_unknown';
+max.addHandler("OpenFolder", (folder) => {
+    const root = folder ? String(folder) : path.join(process.cwd(), "..", "results");
+    TodaysPath = path.join(root, GetDate());
+    CreateDir(TodaysPath);
 });
 
-// Sets the subjects ID. 
-max.addHandler('SetSubjectID', (id) => {
-    SubjectID = id;
-    max.post('Subject ID set:', SubjectID);
+max.addHandler("SetSubjectID", (id) => {
+    SubjectID = String(id);
+    max.post("Subject ID set:", SubjectID);
 });
 
-max.addHandler('SetInfoForResults', (...args) => {
+max.addHandler("SetInfoForResults", (...args) => {
     Methodology = args[0];
     Modality = args[1];
-    Numberofitems = args[2];
+    Numberofitems = Number(args[2]);
 });
 
-max.addHandler('SetInfoForQuestionnaire', (...args) => {
+max.addHandler("SetInfoForQuestionnaire", (...args) => {
     QuestionnaireActive = args[0];
     QuestionnaireType = args[1];
     QuestionnaireIntegration = args[2];
 });
 
-max.addHandler('SetConditionID', (...args) => {
-    AudioConditionsID = args;
-});
-
-max.addHandler('SetConditionPath', (...args) => {
-    ConditionPathArray = args;
-});
-
-max.addHandler('SetConditionHRTF', (...args) => {
-    HRTFInfoArray = args;
-});
-
-max.addHandler('SetConditionParameterMap', (...args) => {
-    ParameterMap = args;
-});
+max.addHandler("SetConditionID", (...args) => { AudioConditionsID = args; });
+max.addHandler("SetConditionPath", (...args) => { ConditionPathArray = args; });
+max.addHandler("SetConditionHRTF", (...args) => { HRTFInfoArray = args; });
+max.addHandler("SetConditionParameterMap", (...args) => { ParameterMap = args; });
 
 max.addHandler("Restart", () => {
-    CloseStreams();
-    CloseQuestionnaireStream();
+    if (session) max.post("Results session closed:", session.dir);
+    session = null;
 });
 
-max.addHandler("GiveSubjectsResultsFile", (...args) => {
-    max.outlet('subjectsDir', 'SendToUnity', 'give_subjects_results_directory', SubjectsPath);
+max.addHandler("GiveSubjectsResultsFile", () => {
+    const s = EnsureSession();
+    if (s) max.outlet("subjectsDir", "SendToUnity", "give_subjects_results_directory", ToForwardSlashes(s.dir));
 });
 
-// ********************
-// Test results writing
-// ********************
+// ---------------------------------------------------------------------------------------------
+// Writing
+// ---------------------------------------------------------------------------------------------
 
-max.addHandler("WriteResult", (...args) => {   
-    max.post("module_ResultsWriter:", args[0], args[1]);
-    if(args[0] == 0){
-        CreateTestStream();
-        WriteResultsOpeningPreamble();
-    }
-    if(args[0] == Numberofitems){
-        resultsWriteStream.write(args[1] + '\n');
-        resultsWriteStream.write("]");
-        CloseStreams();
-    }
-    if(args[0] < Numberofitems){
-        resultsWriteStream.write(args[1] + ", " + '\n');
-    }
-    if(args[0] > Numberofitems){
-        CloseStreams();
-    }
+max.addHandler("WriteResult", (index, json) => {
+    WriteItem("results", "ResultsFile", "TestResults", Number(index), json);
 });
 
-// Methods 
-function CreateTestStream(){
-    if(resultsStreamOpen) {
-        CloseStreams();
-    }
-
-    // Open directory.
-    var time = GetTime('short');
-    SubjectsPath = TodaysPath + '/subj_' + SubjectID + '_' + time;
-    CreateDir(SubjectsPath);
-
-    // Construct filename.
-    var resultfilename = ['results_', SubjectID, '_', time, '.json'];
-    resultfilename = resultfilename.join('');
-
-    // Open stream.
-    try{
-        max.post(process.cwd(), '\n');
-        resultsWriteStream = fs.createWriteStream(SubjectsPath + '/' + resultfilename, {flags:'a+'});
-        resultsStreamOpen = true;
-    }catch(error){
-        max.post("Error in results createWriteStream():", error, '\n');
-    }
-}
-
-function WriteResultsOpeningPreamble(){
-    resultsWriteStream.write("{ \"ResultsFile\" :" + '\n');
-    resultsWriteStream.write("{ \"TestInformation\" :" + '\n');
-    WriteTestInformation();
-    WriteAudioConditionsInformation();
-    resultsWriteStream.write("\"TestResults\" : [" + '\n');
-}
-
-function WriteTestInformation(){
-    var TestInformation = {
-        "Method" : Methodology,
-        "Modality" : Modality,
-        "NumberOfItems" : Numberofitems,
-        "QuestionnaireType" : QuestionnaireType,
-        "QuestionnaireIntegration" : QuestionnaireIntegration
-    }
-    resultsWriteStream.write(JSON.stringify(TestInformation) + ", " + '\n');
-}
-
-
-function WriteAudioConditionsInformation(){
-    resultsWriteStream.write(" \"AudioConditions\" : [" + '\n');
-    for (i=0;i<AudioConditionsID.length;i++) {
-        var TempConditionDict = {
-            "Legend" : i,
-            "VST" : AudioConditionsID[i],
-            "VSTPath" : ConditionPathArray[i],
-            "VSTmapper" : ParameterMap[i],
-            "HRTF" : HRTFInfoArray[i]
-        }
-        if(i < AudioConditionsID.length-1){
-            resultsWriteStream.write(JSON.stringify(TempConditionDict)  + ", " + '\n');
-        }
-        if(i == AudioConditionsID.length-1){
-            resultsWriteStream.write(JSON.stringify(TempConditionDict) + '\n');
-        }
-    }
-    resultsWriteStream.write("] ," + '\n');
-}
-
-function CloseStreams() {
-    if(resultsStreamOpen) {
-        resultsWriteStream.write("}" + '\n' + "}" + '\n');
-        resultsStreamOpen = false;
-        resultsWriteStream.close();
-    }
-}
-
-// *****************************
-// Questionnaire results writing
-// *****************************
-
-max.addHandler("WriteQuestionnaire", (...args) => {   
-    max.post("module_QuestionnaireWriter:", args[0], args[1]);
-    if(args[0] == 0){
-        CreateQuestionnaireStream();
-        WriteQuestionnaireOpeningPreamble();
-    }
-    if(args[0] == Numberofitems){
-        questionnaireWriteStream.write(args[1] + '\n');
-        questionnaireWriteStream.write("]");
-        CloseQuestionnaireStream();
-    }
-    if(args[0] < Numberofitems){
-        questionnaireWriteStream.write(args[1] + ", " + '\n');
-    }
-    if(args[0] > Numberofitems){
-        CloseQuestionnaireStream();
-    }
+max.addHandler("WriteQuestionnaire", (index, json) => {
+    WriteItem("questionnaire", "QuestionnaireFile", "QuestionnaireResults", Number(index), json);
 });
 
-// Methods 
-function CreateQuestionnaireStream(){
-    if(questionnaireStreamOpen) {
-        CloseQuestionnaireStream();
-    }
+max.addHandler("WriteTrial", (json) => {
+    const s = EnsureSession();
+    if (!s) return;
 
-    // Open directory.
-    var time = GetTime('short');
-    SubjectsPath = TodaysPath + '/subj_' + SubjectID + '_' + time;
-    //CreateDir(SubjectsPath);
-    // max.outlet('subjectsDir', 'giveResultsDir', SubjectsPath);
+    const record = Object.assign({ SubjectID: SubjectID, SavedAt: new Date().toISOString() }, ParseJson(json));
+    try {
+        fs.appendFileSync(s.trialsJsonl, JSON.stringify(record) + "\n");
 
-    // Construct filename.
-    var questionnairefilename = ['questionnaire_', SubjectID, '_', time, '.json'];
-    questionnairefilename = questionnairefilename.join('');
-
-    // Open stream.
-    try{
-        max.post(process.cwd(), '\n');
-        questionnaireWriteStream = fs.createWriteStream(SubjectsPath + '/' + questionnairefilename, {flags:'a+'});
-        questionnaireStreamOpen = true;
-    }catch(error){
-        max.post("Error in questionnaire createWriteStream():", error, '\n');
-    }
-}
-
-function WriteQuestionnaireOpeningPreamble(){
-    questionnaireWriteStream.write("{ \"QuestionnaireFile\" :" + '\n');
-    questionnaireWriteStream.write("{ \"TestInformation\" :" + '\n');
-    WriteQuestionnaireInformation();
-    WriteAudioConditionsInformationQuestionnaire();
-    questionnaireWriteStream.write("\"QuestionnaireResults\" : [" + '\n');
-}
-
-function WriteQuestionnaireInformation(){
-    var TestInformation = {
-        "Method" : Methodology,
-        "Modality" : Modality,
-        "NumberOfItems" : Numberofitems,
-        "QuestionnaireType" : QuestionnaireType,
-        "QuestionnaireIntegration" : QuestionnaireIntegration
-    }
-    questionnaireWriteStream.write(JSON.stringify(TestInformation) + ", " + '\n');
-}
-
-function WriteAudioConditionsInformationQuestionnaire(){
-    questionnaireWriteStream.write(" \"AudioConditions\" : [" + '\n');
-    for (i=0;i<AudioConditionsID.length;i++) {
-        var TempConditionDict = {
-            "Legend" : i,
-            "VST" : AudioConditionsID[i],
-            "VSTPath" : ConditionPathArray[i],
-            "VSTmapper" : ParameterMap[i],
-            "HRTF" : HRTFInfoArray[i]
+        if (!s.csvColumns) {
+            s.csvColumns = Object.keys(record);
+            if (!fs.existsSync(s.trialsCsv)) fs.writeFileSync(s.trialsCsv, s.csvColumns.join(",") + "\n");
         }
-        if(i < AudioConditionsID.length-1){
-            questionnaireWriteStream.write(JSON.stringify(TempConditionDict)  + ", " + '\n');
-        }
-        if(i == AudioConditionsID.length-1){
-            questionnaireWriteStream.write(JSON.stringify(TempConditionDict) + '\n');
-            }
-        }
-        questionnaireWriteStream.write("] ," + '\n'); 
-}
-
-function CloseQuestionnaireStream(){
-    if(questionnaireStreamOpen) {
-        questionnaireWriteStream.write("}" + '\n' + "}" + '\n');
-        questionnaireStreamOpen = false;
-        questionnaireWriteStream.close();
+        const row = s.csvColumns.map((k) => CsvValue(record[k])).join(",");
+        fs.appendFileSync(s.trialsCsv, row + "\n");
+    } catch (err) {
+        max.post("ERROR writing trial:", err.message);
     }
-}
-
-// *********
-// Utilities
-// *********
+});
 
 /**
- * Create a directory to save the subjects result files.
- * @param {string} Directory - Path of the directory to create.
+ * Keeps all items of a file in memory and rewrites the whole file after every item, so the file on
+ * disk is always valid JSON. Index 0 (the _config item) starts a new session.
  */
-function CreateDir(Directory) {
+function WriteItem(kind, rootKey, listKey, index, json) {
+    if (index === 0 && kind === "results") session = null;
+    const s = EnsureSession();
+    if (!s) return;
+
+    const doc = s.docs[kind] || (s.docs[kind] = NewDocument());
+    if (index > Numberofitems && doc.complete) return;
+
+    doc.items.push(ParseJson(json));
+    if (index >= Numberofitems) doc.complete = true;
+
+    const content = {};
+    content[rootKey] = {
+        TestInformation: TestInformation(),
+        AudioConditions: AudioConditions(),
+        Complete: doc.complete
+    };
+    content[rootKey][listKey] = doc.items;
+
+    const file = path.join(s.dir, kind + "_" + SubjectID + "_" + s.stamp + ".json");
+    WriteFileAtomic(file, JSON.stringify(content, null, 2));
+}
+
+function NewDocument() {
+    return { items: [], complete: false };
+}
+
+function EnsureSession() {
+    if (session) return session;
+    if (!TodaysPath) {
+        max.post("ERROR: results folder not set (OpenFolder was never called). Load a config first.");
+        return null;
+    }
+    // Never reuse an existing session folder (e.g. two runs started within the same second).
+    let stamp = GetStamp();
+    let dir = path.join(TodaysPath, "subj_" + SubjectID + "_" + stamp);
+    for (let n = 2; fs.existsSync(dir); n++) {
+        stamp = GetStamp() + "_" + n;
+        dir = path.join(TodaysPath, "subj_" + SubjectID + "_" + stamp);
+    }
+    CreateDir(dir);
+    session = {
+        dir: dir,
+        stamp: stamp,
+        docs: {},
+        trialsJsonl: path.join(dir, "trials_" + SubjectID + "_" + stamp + ".jsonl"),
+        trialsCsv: path.join(dir, "trials_" + SubjectID + "_" + stamp + ".csv"),
+        csvColumns: null
+    };
+    max.post("Results session opened:", dir);
+    return session;
+}
+
+function TestInformation() {
+    return {
+        Method: Methodology,
+        Modality: Modality,
+        NumberOfItems: Numberofitems,
+        SubjectID: SubjectID,
+        QuestionnaireActive: QuestionnaireActive,
+        QuestionnaireType: QuestionnaireType,
+        QuestionnaireIntegration: QuestionnaireIntegration
+    };
+}
+
+function AudioConditions() {
+    return AudioConditionsID.map((id, i) => ({
+        Legend: i,
+        VST: id,
+        VSTPath: ConditionPathArray[i],
+        VSTmapper: ParameterMap[i],
+        HRTF: HRTFInfoArray[i]
+    }));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------------------------
+
+function ParseJson(json) {
+    if (typeof json !== "string") return json;
     try {
-        if(!fs.existsSync(Directory)) {
-            fs.mkdirSync(Directory, {recursive : true});
-            max.post('New directory opened: ', Directory);
-        } else {
-            max.post('Directory already exists: ', Directory);
-        }
+        return JSON.parse(json);
     } catch (err) {
-        max.post(err);
+        return { Raw: json };
     }
 }
 
-// <summary>
-// get the current time from the local system
-// returns the date weekday/date/month/year
-// <summary>
-function GetDate()
-{
-    d = new Date();
-
-    year = d.getFullYear();
-    month = ("0" + (d.getMonth() + 1)).slice(-2);
-    date  = ("0" + d.getDate()).slice(-2);
-    day = d.getDay();
-    date = [Days[day], date, (month), year];
-    date = date.join('_');
-    return(date);
+function WriteFileAtomic(file, text) {
+    try {
+        const tmp = file + ".tmp";
+        fs.writeFileSync(tmp, text);
+        fs.renameSync(tmp, file);
+    } catch (err) {
+        max.post("ERROR writing", file, err.message);
+    }
 }
 
-// <summary>
-// get the current time from the local system
-// returns the time hours/minutes
-// <summary>
-function GetTime(format)
-{
-    d = new Date();
+function CsvValue(v) {
+    if (v === null || v === undefined) return "";
+    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
 
-    hours = d.getHours();
-    minutes = ("0" + (d.getMinutes() + 1)).slice(-2);
-    seconds = d.getSeconds();
-    mills = d.getMilliseconds();
+function CreateDir(dir) {
+    try {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+            max.post("New directory opened:", dir);
+        }
+    } catch (err) {
+        max.post("ERROR creating directory", dir, err.message);
+    }
+}
 
-    timeShort = [hours, minutes];
-    timeShort = timeShort.join('');
+function ToForwardSlashes(p) {
+    return p.replace(/\\/g, "/");
+}
 
-    timeLong = [hours, minutes, seconds, mills];
-    timeLong = timeLong.join(':');
+function Pad(n) {
+    return ("0" + n).slice(-2);
+}
 
-    return format == 'short' ? timeShort : timeLong
+/** Folder name for today, e.g. Fri_25_09_2026 (same format as before). */
+function GetDate() {
+    const d = new Date();
+    return [Days[d.getDay()], Pad(d.getDate()), Pad(d.getMonth() + 1), d.getFullYear()].join("_");
+}
+
+/** Session stamp with second resolution, e.g. 20260925-171503. */
+function GetStamp() {
+    const d = new Date();
+    return d.getFullYear() + Pad(d.getMonth() + 1) + Pad(d.getDate()) + "-" +
+           Pad(d.getHours()) + Pad(d.getMinutes()) + Pad(d.getSeconds());
 }

@@ -106,7 +106,8 @@ function loadTest(filePath)
     try{
         _objtxt = JSON.parse(fileString);
     }catch(e){
-        error("Error loading file:", e);
+        error("Error loading file:", filePath, e, "\n");
+        return;
     }
 
     // Set the incoming and outgoing UPD port information for osc messages.
@@ -117,7 +118,8 @@ function loadTest(filePath)
                      _objtxt.testSettings.questionnaireIntegration);
 
     // Load in the correct method class and configure the test.
-    numberOfAudioRenderingVSTs = _objtxt.testSettings.audioRendering.audioVSTConditions.length;
+    var audioRendering = _objtxt.testSettings.audioRendering || {};
+    numberOfAudioRenderingVSTs = audioRendering.audioVSTConditions ? audioRendering.audioVSTConditions.length : 0;
     setTestMethod(_objtxt.testSettings.methodType);
 
     // Calculate the paradigm based of off the set variables in the JSON.
@@ -215,11 +217,10 @@ function UpdateScenePanelInformation(SceneIndex) {
         // Check if CGI or VIDEO.
         if (_objtxt.Scenes[SceneIndex].visualStimuliType == "CGI")
         {
+            var dims = _objtxt.Scenes[SceneIndex].dimensions || ["-", "-", "-"];
             SENDTO_PANEL_SCENE_INFORMATION.message("ToggleDimensionsLabel", 1);
             SENDTO_PANEL_SCENE_INFORMATION.message("DisplayDimensions", String(
-                _objtxt.Scenes[SceneIndex].dimensions[0] + " " +
-                _objtxt.Scenes[SceneIndex].dimensions[1] + " " +
-                _objtxt.Scenes[SceneIndex].dimensions[2]));
+                dims[0] + " " + dims[1] + " " + dims[2]));
             SENDTO_PANEL_SCENE_INFORMATION.message("DisplayVisualInformation", 
                                                     "CGI (Computer generated imagery)", 
                                                     "null");
@@ -251,9 +252,9 @@ function SetOSCManager() {
                                     "set_paradigm_info", 
                                     _objtxt.testSettings.methodType,                     // set method.
                                     numberOfAudioRenderingVSTs,         // set number of VST loaded.
-                                    _objtxt.testSettings.questionnaireType,         // set type of questionnaire.
-                                    _objtxt.testSettings.questionnaireIntegration, // set the intrgation mode of the questionnaire. 
-                                    _objtxt.testSettings.repetionMultiplier);       // set the number of repetitions for the test.            
+                                    _objtxt.testSettings.questionnaireType || "None",         // set type of questionnaire.
+                                    _objtxt.testSettings.questionnaireIntegration || "None", // set the integration mode of the questionnaire. 
+                                   1);       // set the number of repetitions for the test.            
 }
 
 /**
@@ -265,7 +266,7 @@ function SetOSCManager() {
  */
 function setQuestionnaire(questionnaireType, integrationType) {
 
-    if(questionnaireType === null){
+    if(questionnaireType === null || questionnaireType === undefined || questionnaireType === "None"){
         SEND_MODULE_RESULTS_WRITER.message("SetInfoForQuestionnaire", 
                                             0, 
                                             "null", 
@@ -337,6 +338,19 @@ function setTestMethod(method) {
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest",numberOfAudioRenderingVSTs, _objtxt.testSettings.repetionMultiplier);
             break;
 
+        case 'Localization':
+            post("Importing test methodology: ", method, "\n");
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_Localization");
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest", JSON.stringify({
+                "localization": _objtxt.localization || _objtxt.testSettings.localization || {},
+                "contentDirectory": _objtxt.testSettings.pathToAudioVideoScenesContent,
+                // Per-scene overrides of the localization block (e.g. a training block).
+                "scenes": (_objtxt.Scenes || []).map(function (sc) {
+                    return { "stimuli_ID": sc.stimuli_ID, "localization": sc.localization || null };
+                })
+            }));
+            break;
+
         case 'MUSHRA':
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_MUSHRA");
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest", numberOfAudioRenderingVSTs);         
@@ -377,7 +391,7 @@ function DisplayTestInformation() {
  * Initializes the number of voices on the poly~ object to the number of VSTs.
  */
 function SetaudioConditions(AudioRendering) {
-    if (AudioRendering.active === 1){
+    if (AudioRendering && AudioRendering.active === 1){
 
         SENDTO_PANEL_AUDIO_INFORMATION.message("SetButtons", 
                                                 AudioRendering.renderingPipeline, 
@@ -577,8 +591,9 @@ function SelectSceneCondition(currentSceneCondition) {
 function LoadAudioFolders(SelecedScene) {
 
 
-    var multichannelAudioFile = _objtxt.Scenes[SelecedScene].multichannelAudio.multichannelAudioFile = null ? "null" : _objtxt.Scenes[SelecedScene].multichannelAudio.multichannelAudioFile;
-    var objectsFolder =  _objtxt.Scenes[SelecedScene].objectAudio.objectAudioFolder = null ? "null" : _objtxt.Scenes[SelecedScene].objectAudio.objectAudioFolder;
+    var scene = _objtxt.Scenes[SelecedScene];
+    var multichannelAudioFile = (scene.multichannelAudio && scene.multichannelAudio.multichannelAudioFile) ? scene.multichannelAudio.multichannelAudioFile : null;
+    var objectsFolder = (scene.objectAudio && scene.objectAudio.objectAudioFolder) ? scene.objectAudio.objectAudioFolder : null;
 
 
     SENDTO_PANEL_AUDIO_INFORMATION.message("ClearBuffer");
@@ -668,6 +683,10 @@ function calculateParadigm() {
             thisTest = _method_MUSHRA_calc.MUSHRAParadigm(_objtxt);
             break;
 
+        case 'Localization':
+            thisTest = LocalizationParadigm(_objtxt);
+            break;
+
         case 'EBA':
             thisTest = _method_EBA_calc.EBAParadigm(_objtxt);
             break;
@@ -689,6 +708,15 @@ function calculateParadigm() {
     } catch (e) {
         post("Error parsing jsontmp.json");
         return false;
+    }
+
+    // A Max Dict stores a key that was appended to only once as a single value, not as an array,
+    // so a paradigm with exactly one item comes back as an object. Always work with an array.
+    if (!_objParadigm.tmpItem) {
+        _objParadigm.tmpItem = [];
+        error("The paradigm has no items. Check the Scenes and methodType in the config file.\n");
+    } else if (!(_objParadigm.tmpItem instanceof Array)) {
+        _objParadigm.tmpItem = [_objParadigm.tmpItem];
     }
 
 
@@ -729,6 +757,35 @@ function giveUserModalityDescriptions() {
 }
 
 /**
+ * Returns the item presentation order from the config, lower-cased ("random" or "fixed").
+ * Accepts the documented key testSettings.itemPresentationOrder, the misspelled key used in older
+ * config files (testSettings.itemPresentationOder) and the top-level key PresentationOrder.
+ */
+function getPresentationOrder() {
+    var ts = _objtxt.testSettings || {};
+    var order = ts.itemPresentationOrder || ts.itemPresentationOder || _objtxt.PresentationOrder || "Fixed";
+    return String(order).toLowerCase();
+}
+
+/**
+ * One test item per scene. The trials inside each item are handled by method_Localization.js.
+ */
+function LocalizationParadigm(objtxt) {
+    var tmpTest = new Dict();
+    for (var s = 0; s < objtxt.Scenes.length; s++) {
+        var tmpItem = new Dict();
+        tmpItem.set("sceneIndex", s);
+        tmpItem.set("stimuli_ID", objtxt.Scenes[s].stimuli_ID);
+        tmpItem.set("unityScene_ID", objtxt.Scenes[s].unityScene_ID);
+        tmpItem.set("videoFile", "null");
+        tmpItem.set("video_ID", "null");
+        tmpItem.set("audioCondition", 0);
+        tmpTest.append("tmpItem", tmpItem);
+    }
+    return tmpTest;
+}
+
+/**
  * Creates a randomized array the length of the number of items in the paradigm. 
  */
 function randomizeSequence() {
@@ -742,7 +799,7 @@ function randomizeSequence() {
         tmpArray.push(j);
     }
 
-    if(_objtxt.PresentationOrder == "Random")
+    if(getPresentationOrder() === "random")
     {
         while(0 !== i) {
             randomizedValue = Math.floor(Math.random()* i);
@@ -754,5 +811,5 @@ function randomizeSequence() {
         }
     }
     randomization = tmpArray;
-    post('Randomizing', _objParadigm.tmpItem.length, 'tmpItems:', randomization, '\n');
+    post('Item order (' + getPresentationOrder() + '):', randomization, '\n');
 }

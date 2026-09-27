@@ -1,0 +1,63 @@
+{
+    "testSettings" : {
+        "udpPortIn" : 8002,
+        "udpPortOut" : 8000,
+        "ip" : "127.0.0.1",
+        "methodType" : "Localization",
+        "questionnaireType" : "None",
+        "questionnaireIntegration" : "None",
+        "modalityRatio" : "A",
+        "itemPresentationOrder" : "Fixed",
+        "pathToAudioVideoScenesContent" : "E:/work/_qoevave/github_qoevave",
+        "audioRendering" : {
+            "active" : 0,
+            "renderingPipeline" : "None",
+            "pathToVSTs" : "",
+            "audioVSTConditions" : []
+        }
+    },
+    "localization" : {
+        "stimuliFolder" : "Content",
+        "repetitions" : 3,
+        "randomize" : true,
+        "avoidImmediateRepeats" : true,
+        "startDelayMs" : 1500,
+        "interTrialIntervalMs" : 1000,
+        "responseDuringStimulus" : false,
+        "maxStimulusDurationMs" : 8000,
+        "monoToBothChannels" : true,
+        "outputChannels" : [1, 2],
+        "gainDb" : 0.0,
+        "requireAlignment" : true,
+        "alignmentToleranceDeg" : 1,
+        "alignmentHoldMs" : 500,
+        "stimuli" : [
+            { "id" : "az000_el00", "file" : "test_sample_1.wav", "targetAzimuth" : 0,   "targetElevation" : 0 },
+            { "id" : "az030_el00", "file" : "test_sample_1.wav", "targetAzimuth" : 30,  "targetElevation" : 0 },
+            { "id" : "az330_el00", "file" : "test_sample_1.wav", "targetAzimuth" : -30, "targetElevation" : 0 }
+        ]
+    },
+    "Scenes" : [
+        {
+            "stimuli_ID" : "Localization_training",
+            "unityScene_ID" : "_localization",
+            "visualStimuliType" : "CGI",
+            "dimensions" : [ 10.0, 4.0, 10.0 ],
+            "multichannelAudio" : { "multichannelAudioFile" : null },
+            "objectAudio" : { "objectAudioFolder" : null, "objectAudioRouting" : [] },
+            "localization" : {
+                "training" : true,
+                "repetitions" : 1,
+                "feedbackMs" : 2000
+            }
+        },
+        {
+            "stimuli_ID" : "Localization_block_1",
+            "unityScene_ID" : "_localization",
+            "visualStimuliType" : "CGI",
+            "dimensions" : [ 10.0, 4.0, 10.0 ],
+            "multichannelAudio" : { "multichannelAudioFile" : null },
+            "objectAudio" : { "objectAudioFolder" : null, "objectAudioRouting" : [] }
+        }
+    ]
+}

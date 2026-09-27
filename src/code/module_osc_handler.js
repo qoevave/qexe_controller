@@ -111,8 +111,15 @@ max.addHandler('TestManager', (...args) => {handle_TestManager(...args)});
 function handle_TestManager(...args){
     var msg = args[0];
 
-    if(jsonLoaded===0){
-        max.post('WARNING: no json test loaded', jsonLoaded);
+    if (msg === 'client_is_active') {
+        max.post('Client is active:', args[1], max.POST_LEVELS.WARN);
+        if (!jsonLoaded) max.post('WARNING: Unity connected but no config (.json) is loaded yet. Load one and restart the Unity client.', max.POST_LEVELS.WARN);
+        max.outlet('toclient', '/client/configuration/', 'json_loaded', jsonLoaded ? 1 : 0);
+        return;
+    }
+
+    if (!jsonLoaded) {
+        max.post('WARNING: no json test loaded, ignoring', msg);
         return;
     }
 
@@ -125,16 +132,13 @@ function handle_TestManager(...args){
             max.post('Unity setting next item');
             max.outlet('testmanager', 'OSCCall', 'setitem');
             break;
-        case 'client_is_active':
-            max.post('Client is active:', args[1], max.POST_LEVELS.WARN);
-            max.outlet('toclient', '/client/configuration/', 'json_loaded', 1);
-            break;
         case 'get_paradigm_information':
             //max.post('Unity requesting method information');
             handle_SendToUnity('give_paradigm_information');
             break;
         case 'get_results_directory':
             max.outlet('testmanager', 'OSCCall', 'getdirectory');
+            break;
         default:
             max.post('/control/testmanager has no handler for msg value');
             break;
@@ -175,6 +179,19 @@ function handle_SendToUnity(...args){
     }
 }
 
+
+
+/**
+ * Send an arbitrary OSC message to Unity: SendRaw /address arg1 arg2 ...
+ * Used by method patches (e.g. method_Localization) for the typed /qexe/... messages.
+ */
+max.addHandler('SendRaw', (address, ...args) => {
+    if (typeof address !== 'string' || address[0] !== '/') {
+        max.post('SendRaw: first argument must be an OSC address, got', address);
+        return;
+    }
+    max.outlet('toclient', address, ...args);
+});
 
 
 max.addHandler('SetLocalVars', (...args) => {
