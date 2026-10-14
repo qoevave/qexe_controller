@@ -6,6 +6,7 @@
  *     results_<SubjectID>_<stamp>.json         per-item results (always valid JSON, rewritten after every item)
  *     questionnaire_<SubjectID>_<stamp>.json   questionnaire results (same format)
  *     trials_<SubjectID>_<stamp>.jsonl / .csv  per-trial data (e.g. localization), one line per trial, appended
+ *     <log>_<SubjectID>_<stamp>.jsonl / .csv   further logs via WriteLog (e.g. playbacks of paired localization)
  *
  * Files are written synchronously after every item or trial, so an aborted test or a crash keeps
  * everything recorded up to that point. The session folder name has second resolution, so repeated
@@ -21,7 +22,8 @@
  *   GiveSubjectsResultsFile            sends the session folder to Unity (behaviour log location)
  *   WriteResult <itemIndex> <json>
  *   WriteQuestionnaire <itemIndex> <json>
- *   WriteTrial <json>
+ *   WriteTrial <json>                  appends to trials_<ID>_<stamp>.jsonl / .csv
+ *   WriteLog <name> <json>             appends to <name>_<ID>_<stamp>.jsonl / .csv (e.g. playbacks)
  */
 
 const fs = require("fs");
@@ -103,24 +105,43 @@ max.addHandler("WriteQuestionnaire", (index, json) => {
     WriteItem("questionnaire", "QuestionnaireFile", "QuestionnaireResults", Number(index), json);
 });
 
-max.addHandler("WriteTrial", (json) => {
+max.addHandler("WriteTrial", (...args) => {
+    AppendRecord("trials", args.length === 1 ? args[0] : args.join(" "));
+});
+
+/**
+ * WriteLog <name> <json>: appends one record to <name>_<SubjectID>_<stamp>.jsonl / .csv in the
+ * session folder (e.g. the playback log of paired localization). Same format as WriteTrial.
+ */
+max.addHandler("WriteLog", (name, ...args) => {
+    const safe = String(name || "log").replace(/[^A-Za-z0-9_-]/g, "_");
+    AppendRecord(safe, args.length === 1 ? args[0] : args.join(" "));
+});
+
+/** Appends a record (JSON string) to a per-session .jsonl and .csv pair; CSV columns come from the first record. */
+function AppendRecord(name, json) {
     const s = EnsureSession();
     if (!s) return;
 
+    const log = s.logs[name] || (s.logs[name] = {
+        jsonl: path.join(s.dir, name + "_" + SubjectID + "_" + s.stamp + ".jsonl"),
+        csv: path.join(s.dir, name + "_" + SubjectID + "_" + s.stamp + ".csv"),
+        columns: null
+    });
     const record = Object.assign({ SubjectID: SubjectID, SavedAt: new Date().toISOString() }, ParseJson(json));
     try {
-        fs.appendFileSync(s.trialsJsonl, JSON.stringify(record) + "\n");
+        fs.appendFileSync(log.jsonl, JSON.stringify(record) + "\n");
 
-        if (!s.csvColumns) {
-            s.csvColumns = Object.keys(record);
-            if (!fs.existsSync(s.trialsCsv)) fs.writeFileSync(s.trialsCsv, s.csvColumns.join(",") + "\n");
+        if (!log.columns) {
+            log.columns = Object.keys(record);
+            if (!fs.existsSync(log.csv)) fs.writeFileSync(log.csv, log.columns.join(",") + "\n");
         }
-        const row = s.csvColumns.map((k) => CsvValue(record[k])).join(",");
-        fs.appendFileSync(s.trialsCsv, row + "\n");
+        const row = log.columns.map((k) => CsvValue(record[k])).join(",");
+        fs.appendFileSync(log.csv, row + "\n");
     } catch (err) {
-        max.post("ERROR writing trial:", err.message);
+        max.post("ERROR writing " + name + ":", err.message);
     }
-});
+}
 
 /**
  * Keeps all items of a file in memory and rewrites the whole file after every item, so the file on
@@ -171,9 +192,7 @@ function EnsureSession() {
         dir: dir,
         stamp: stamp,
         docs: {},
-        trialsJsonl: path.join(dir, "trials_" + SubjectID + "_" + stamp + ".jsonl"),
-        trialsCsv: path.join(dir, "trials_" + SubjectID + "_" + stamp + ".csv"),
-        csvColumns: null
+        logs: {}            // name -> {jsonl, csv, columns} (trials, playbacks, ...)
     };
     max.post("Results session opened:", dir);
     return session;

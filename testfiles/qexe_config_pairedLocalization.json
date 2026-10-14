@@ -1,0 +1,265 @@
+{
+    "_comment": "PLACEHOLDERS: set pathToAudioVideoScenesContent and localization.stimuliFolder to where the renders are, and the file names in 'items' to the real renders. The order inside each 'pair' does not matter: Max balances and flips which entry is A. Both files of a pair are loaded into buffers; playback length comes from the WAV headers (maxStimulusDurationMs is only the fallback). monoToBothChannels only affects mono files; binaural (stereo) renders are played as they are.",
+    "testSettings": {
+        "udpPortIn": 8002,
+        "udpPortOut": 8000,
+        "ip": "127.0.0.1",
+        "methodType": "PairedLocalization",
+        "questionnaireType": "None",
+        "questionnaireIntegration": "None",
+        "modalityRatio": "A",
+        "itemPresentationOrder": "Fixed",
+        "pathToAudioVideoScenesContent": "PLACEHOLDER:/path/to/content",
+        "audioRendering": {
+            "active": 0,
+            "renderingPipeline": "None",
+            "pathToVSTs": "",
+            "audioVSTConditions": []
+        }
+    },
+    "localization": {
+        "stimuliFolder": "PLACEHOLDER_renders_folder",
+        "repetitions": 2,
+        "randomize": true,
+        "startDelayMs": 1500,
+        "interTrialIntervalMs": 1000,
+        "maxStimulusDurationMs": 8000,
+        "switchFadeMs": 20,
+        "loadTimeoutMs": 3000,
+        "monoToBothChannels": true,
+        "outputChannels": [
+            1,
+            2
+        ],
+        "gainDb": 0.0,
+        "requireAlignment": true,
+        "alignmentToleranceDeg": 1,
+        "alignmentHoldMs": 500,
+        "items": [
+            {
+                "id": "item_pos000",
+                "targetAzimuth": 0,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos000_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos000_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos045",
+                "targetAzimuth": 45,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos045_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos045_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos090",
+                "targetAzimuth": 90,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos090_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos090_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos135",
+                "targetAzimuth": 135,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos135_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos135_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos180",
+                "targetAzimuth": 180,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos180_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos180_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos225",
+                "targetAzimuth": -135,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos225_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos225_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos270",
+                "targetAzimuth": -90,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos270_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos270_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "item_pos315",
+                "targetAzimuth": -45,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos315_GA.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos315_Hy.wav"
+                    }
+                ]
+            },
+            {
+                "id": "ctrl_pos045_GA",
+                "type": "control",
+                "targetAzimuth": 45,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "GA",
+                        "file": "pos045_GA.wav"
+                    },
+                    {
+                        "condition": "GA",
+                        "file": "pos045_GA.wav"
+                    }
+                ]
+            },
+            {
+                "id": "ctrl_pos270_Hy",
+                "type": "control",
+                "targetAzimuth": -90,
+                "targetElevation": 0,
+                "pair": [
+                    {
+                        "condition": "Hy",
+                        "file": "pos270_Hy.wav"
+                    },
+                    {
+                        "condition": "Hy",
+                        "file": "pos270_Hy.wav"
+                    }
+                ]
+            }
+        ]
+    },
+    "Scenes": [
+        {
+            "stimuli_ID": "PairedLocalization_training",
+            "unityScene_ID": "_pairedLocalization",
+            "visualStimuliType": "CGI",
+            "dimensions": [
+                10.0,
+                4.0,
+                10.0
+            ],
+            "multichannelAudio": {
+                "multichannelAudioFile": null
+            },
+            "objectAudio": {
+                "objectAudioFolder": null,
+                "objectAudioRouting": []
+            },
+            "localization": {
+                "training": true,
+                "repetitions": 1,
+                "items": [
+                    {
+                        "id": "item_pos045",
+                        "targetAzimuth": 45,
+                        "targetElevation": 0,
+                        "pair": [
+                            {
+                                "condition": "GA",
+                                "file": "pos045_GA.wav"
+                            },
+                            {
+                                "condition": "Hy",
+                                "file": "pos045_Hy.wav"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "item_pos270",
+                        "targetAzimuth": -90,
+                        "targetElevation": 0,
+                        "pair": [
+                            {
+                                "condition": "GA",
+                                "file": "pos270_GA.wav"
+                            },
+                            {
+                                "condition": "Hy",
+                                "file": "pos270_Hy.wav"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "stimuli_ID": "PairedLocalization_block_1",
+            "unityScene_ID": "_pairedLocalization",
+            "visualStimuliType": "CGI",
+            "dimensions": [
+                10.0,
+                4.0,
+                10.0
+            ],
+            "multichannelAudio": {
+                "multichannelAudioFile": null
+            },
+            "objectAudio": {
+                "objectAudioFolder": null,
+                "objectAudioRouting": []
+            }
+        }
+    ]
+}

@@ -351,6 +351,19 @@ function setTestMethod(method) {
             }));
             break;
 
+        case 'PairedLocalization':
+            post("Importing test methodology: ", method, "\n");
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_PairedLocalization");
+            SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest", JSON.stringify({
+                "localization": _objtxt.localization || _objtxt.testSettings.localization || {},
+                "contentDirectory": _objtxt.testSettings.pathToAudioVideoScenesContent,
+                // Per-scene overrides of the localization block (e.g. a training block).
+                "scenes": (_objtxt.Scenes || []).map(function (sc) {
+                    return { "stimuli_ID": sc.stimuli_ID, "localization": sc.localization || null };
+                })
+            }));
+            break;
+
         case 'MUSHRA':
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("patch", "script sendbox bpatcherMethod replace method_MUSHRA");
             SEND_MODULE_METHOD_QUESTIONNAIRE.message("setTest", numberOfAudioRenderingVSTs);         
@@ -684,6 +697,7 @@ function calculateParadigm() {
             break;
 
         case 'Localization':
+        case 'PairedLocalization':
             thisTest = LocalizationParadigm(_objtxt);
             break;
 
@@ -768,7 +782,8 @@ function getPresentationOrder() {
 }
 
 /**
- * One test item per scene. The trials inside each item are handled by method_Localization.js.
+ * One test item per scene. The trials inside each item are handled by method_Localization.js
+ * (or method_PairedLocalization.js for PairedLocalization).
  */
 function LocalizationParadigm(objtxt) {
     var tmpTest = new Dict();
